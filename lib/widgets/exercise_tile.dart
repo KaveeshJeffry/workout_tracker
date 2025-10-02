@@ -15,35 +15,40 @@ class ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
 
-    // Build small chips like: S1 10 | 20kg
     List<Widget> _setChips() {
       return List.generate(exercise.sets.length, (i) {
         final s = exercise.sets[i];
         final hasW = s.weight != null;
-        final isInt = hasW ? (s.weight == s.weight!.roundToDouble()) : false;
-        final w = hasW ? (isInt ? s.weight!.toStringAsFixed(0) : s.weight!.toString()) : null;
+        String? wStr;
+        if (hasW) {
+          final w = s.weight!;
+          final isInt = w.remainder(1) == 0.0;
+          wStr = isInt ? w.toStringAsFixed(0) : w.toString();
+        }
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           margin: const EdgeInsets.only(right: 8, bottom: 8),
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHighest,
+            color: cs.surfaceContainerHighest, // pops nicely on true black
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: cs.outlineVariant),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('S${i + 1}', style: Theme.of(context).textTheme.labelMedium),
+              Text('S${i + 1}', style: tt.labelMedium),
               const SizedBox(width: 8),
-              Text('${s.reps} reps', style: Theme.of(context).textTheme.labelMedium),
-              if (w != null) ...[
+              Text('${s.reps} reps', style: tt.labelMedium),
+              if (wStr != null) ...[
                 const SizedBox(width: 8),
                 const Text('•'),
                 const SizedBox(width: 8),
-                Text('$w kg', style: Theme.of(context).textTheme.labelMedium),
+                Text('$wStr kg', style: tt.labelMedium),
               ],
             ],
           ),
@@ -52,10 +57,15 @@ class ExerciseTile extends StatelessWidget {
     }
 
     return Card(
-      elevation: 0.5,
-      child: InkWell(
+      elevation: 0, // rely on outline for separation on black
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(.7)),
+      ),
+      child: InkWell(
         onTap: onEdit,
+        onLongPress: onEdit, // quick access
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
           child: Row(
@@ -69,7 +79,7 @@ class ExerciseTile extends StatelessWidget {
                   color: cs.primary.withOpacity(.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.fitness_center, size: 20),
+                child: Icon(Icons.fitness_center, size: 20, color: cs.onSurface),
               ),
               const SizedBox(width: 12),
 
@@ -78,15 +88,28 @@ class ExerciseTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(exercise.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    // Title (safe overflow)
+                    Text(
+                      exercise.name,
+                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 8),
-                    Wrap(children: _setChips()),
+
+                    // Set chips
+                    Wrap(
+                      spacing: 0,
+                      runSpacing: 6,
+                      children: _setChips(),
+                    ),
+
+                    // Notes (if any)
                     if ((exercise.notes ?? '').isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         exercise.notes!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.secondary),
+                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -96,8 +119,8 @@ class ExerciseTile extends StatelessWidget {
               ),
 
               // Actions
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              OverflowBar(
+                spacing: 0,
                 children: [
                   IconButton(
                     tooltip: 'Edit',
@@ -110,7 +133,7 @@ class ExerciseTile extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
